@@ -187,7 +187,7 @@ function App() {
     <div className="text-center py-4 lg:hidden">
        <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-mono">
             <span>Designed by</span>
-            <a href="https://github.com/Brian-Lynn" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 font-bold hover:text-blue-600 transition-colors">
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 font-bold hover:text-blue-600 transition-colors">
                 <span>0xbean</span>
                 <GithubIcon className="w-3.5 h-3.5" />
             </a>
@@ -209,7 +209,7 @@ function App() {
           
           <div className="text-xs sm:text-sm font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg site-signature whitespace-nowrap flex items-center gap-2">
              <span>v1.9.0 by</span>
-             <a href="https://github.com/Brian-Lynn" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 font-bold hover:text-blue-600 transition-colors">
+             <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 font-bold hover:text-blue-600 transition-colors">
                 <span>0xbean</span>
                 <GithubIcon className="w-4 h-4" />
              </a>
@@ -254,7 +254,7 @@ function App() {
         <footer className="hidden lg:block col-span-12 mt-8 py-8 text-center text-slate-400 text-base font-mono border-t border-slate-200">
           <div className="flex items-center justify-center gap-2">
             <span>Developed by</span>
-            <a href="https://github.com/Brian-Lynn" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-500 font-bold hover:underline cursor-pointer transition-colors ml-1">
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-500 font-bold hover:underline cursor-pointer transition-colors ml-1">
                 <span>0xbean</span>
                 <GithubIcon className="w-5 h-5" />
             </a>
