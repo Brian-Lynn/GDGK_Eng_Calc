@@ -10,8 +10,7 @@ import {
   ReferenceDot, 
   Area, 
   ComposedChart, 
-  ReferenceArea,
-  Line
+  ReferenceArea
 } from 'recharts';
 
 const SUBJECT_COLORS: Record<ScalingSubject, string> = {
@@ -21,14 +20,23 @@ const SUBJECT_COLORS: Record<ScalingSubject, string> = {
   "地理": "#6366f1"  // indigo-500
 };
 
-// Enhanced visibility for grade zones
+// Grade zones defined by Scaled Score ranges
 const GRADE_ZONES = [
-  { label: 'E', min: 30, max: 40.5, color: '#cbd5e1', textColor: '#475569' }, // Darker Slate for E
-  { label: 'D', min: 40.5, max: 58.5, color: '#fecaca', textColor: '#dc2626' }, // Darker Red for D
-  { label: 'C', min: 58.5, max: 70.5, color: '#fde68a', textColor: '#d97706' }, // Darker Amber for C
-  { label: 'B', min: 70.5, max: 82.5, color: '#bae6fd', textColor: '#0284c7' }, // Darker Sky for B
-  { label: 'A', min: 82.5, max: 100, color: '#bbf7d0', textColor: '#16a34a' }, // Darker Green for A
+  { label: 'E', min: 30, max: 40.5, color: '#cbd5e1', textColor: '#475569', desc: '最后 2%' }, 
+  { label: 'D', min: 40.5, max: 58.5, color: '#fecaca', textColor: '#dc2626', desc: '后 13%' }, 
+  { label: 'C', min: 58.5, max: 70.5, color: '#fde68a', textColor: '#d97706', desc: '中 35%' }, 
+  { label: 'B', min: 70.5, max: 82.5, color: '#bae6fd', textColor: '#0284c7', desc: '次 35%' }, 
+  { label: 'A', min: 82.5, max: 100, color: '#bbf7d0', textColor: '#16a34a', desc: '前 15%' }, 
 ];
+
+// Helper to calculate percentile (0-100, where 100 is top) based on score
+const scoreToPercentile = (score: number) => {
+  if (score >= 82.5) return 85 + ((score - 82.5) / 17.5) * 15;
+  if (score >= 70.5) return 50 + ((score - 70.5) / 12) * 35;
+  if (score >= 58.5) return 15 + ((score - 58.5) / 12) * 35;
+  if (score >= 40.5) return 2 + ((score - 40.5) / 18) * 13;
+  return 0 + ((score - 30) / 10.5) * 2;
+};
 
 // Helper to calculate scaled score using the selected dataset
 const calculateScaledScore = (
@@ -42,11 +50,9 @@ const calculateScaledScore = (
   const subjectData = dataset[subject];
   if (!subjectData || subjectData.length === 0) return 30; // Fallback
 
-  // 1. Try exact lookup
   const exact = subjectData.find(pair => pair[0] === raw);
   if (exact) return exact[1];
 
-  // 2. Handle missing points by finding the closest defined points
   let maxRaw = -1;
   let minRaw = 101;
   let maxScaled = 30;
@@ -77,232 +83,203 @@ const calculateScaledScore = (
 const SingleSubjectChart = ({ 
   subject, 
   inputRawScore, 
-  chartData 
+  chartData,
+  mode
 }: { 
   subject: ScalingSubject, 
   inputRawScore: string,
-  chartData: any[]
+  chartData: any[],
+  mode: 'score' | 'rank'
 }) => {
-  const [hoverData, setHoverData] = useState<{ raw: number, scaled: number } | null>(null);
-  
   const rawScoreVal = parseInt(inputRawScore);
   const hasInputScore = !isNaN(rawScoreVal);
   
+  // Find the data point for the user's input
   const inputPoint = hasInputScore ? chartData.find(d => d.raw === rawScoreVal) : null;
-  const inputScaledVal = inputPoint ? inputPoint[subject] : 0;
+  const inputScore = inputPoint ? inputPoint[subject] : 0;
   
+  // Determine X coordinate for the user dot based on mode
+  const dotX = mode === 'score' 
+    ? rawScoreVal 
+    : (inputPoint ? inputPoint[`${subject}_rank`] : 0);
+
   const color = SUBJECT_COLORS[subject];
 
-  const handleMouseMove = (state: any) => {
-    if (state.activePayload && state.activePayload.length > 0) {
-      const point = state.activePayload[0].payload;
-      setHoverData({ raw: point.raw, scaled: point[subject] });
+  // Axis Configurations
+  const xAxisConfig = useMemo(() => {
+    if (mode === 'score') {
+      return {
+        dataKey: 'raw',
+        label: '原始分 (卷面)',
+        domain: [0, 100],
+        ticks: [0, 20, 40, 60, 80, 100],
+        unit: ''
+      };
+    } else {
+      return {
+        dataKey: `${subject}_rank`,
+        label: '位次 (累计百分比)',
+        domain: [0, 100],
+        ticks: [0, 20, 40, 60, 80, 100], // Uniform ticks for Rank mode
+        unit: '%'
+      };
     }
-  };
-
-  const handleMouseLeave = () => {
-    setHoverData(null);
-  };
+  }, [mode, subject]);
 
   return (
-    <div className="h-64 sm:h-80 w-full relative select-none">
+    <div className="h-64 sm:h-72 w-full relative select-none mt-2">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart 
           data={chartData} 
-          // Removed large right margin to maximize space
-          margin={{ top: 20, right: 0, bottom: 20, left: 0 }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
+          margin={{ top: 10, right: 10, bottom: 20, left: 0 }}
         >
            <defs>
               <linearGradient id={`gradient-${subject}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color} stopOpacity={0.4}/>
+                <stop offset="5%" stopColor={color} stopOpacity={0.6}/>
                 <stop offset="95%" stopColor={color} stopOpacity={0.1}/>
               </linearGradient>
             </defs>
 
-          {/* Grade Zones Background */}
+          {/* Grade Zones Background - Always Y-Axis (Score) based */}
           {GRADE_ZONES.map((zone) => (
              <ReferenceArea 
                 key={zone.label}
-                yAxisId="left"
                 y1={zone.min} 
                 y2={zone.max} 
                 fill={zone.color} 
-                fillOpacity={0.4}
+                fillOpacity={0.3}
                 stroke="none"
-             >
-             </ReferenceArea>
+                label={({ viewBox }) => (
+                  <text 
+                    x={viewBox.x + viewBox.width - 10} 
+                    y={viewBox.y + viewBox.height / 2} 
+                    dy={5}
+                    textAnchor="end" 
+                    fill={zone.textColor} 
+                    fontSize={14} 
+                    fontWeight={900} 
+                    opacity={0.5}
+                  >
+                    {zone.label}
+                  </text>
+                )}
+             />
           ))}
           
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" strokeOpacity={0.5} />
+          <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" />
           
           <XAxis 
-              dataKey="raw" 
-              type="number" 
-              domain={[0, 100]} 
-              ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
-              tick={{fontSize: 10, fill: '#475569', fontWeight: 600}}
-              axisLine={{ stroke: '#94a3b8' }}
-              label={{ value: '卷面分 (原始分)', position: 'insideBottomRight', offset: -5, fontSize: 10, fill: '#64748b' }}
-          />
-          <YAxis 
-              yAxisId="left"
-              domain={[30, 100]} 
-              ticks={[30, 40, 50, 60, 70, 80, 90, 100]} 
-              tick={{fontSize: 10, fill: '#475569', fontWeight: 600}}
-              width={30}
-              axisLine={{ stroke: '#94a3b8' }}
-              label={{ value: '等级分', position: 'insideTopLeft', offset: 10, fontSize: 10, fill: '#64748b' }}
-          />
-          {/* Secondary YAxis for Population Percentage - Adjusted width/margin */}
-          <YAxis 
-              yAxisId="right"
-              orientation="right"
               type="number"
-              domain={[30, 100]} 
-              ticks={[30, 40.5, 58.5, 70.5, 82.5, 100]}
-              tickFormatter={(val) => {
-                 if (val === 100) return 'Top';
-                 if (val === 82.5) return '15%';
-                 if (val === 70.5) return '50%';
-                 if (val === 58.5) return '85%';
-                 if (val === 40.5) return '98%';
-                 if (val === 30) return '100%';
-                 return '';
-              }}
-              width={35}
-              axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.3 }}
-              tick={{fontSize: 9, fill: '#64748b', fontWeight: 600}}
+              dataKey={xAxisConfig.dataKey} 
+              domain={xAxisConfig.domain} 
+              ticks={xAxisConfig.ticks}
+              tick={{fontSize: 10, fill: '#64748b'}}
+              axisLine={{ stroke: '#cbd5e1' }}
               tickLine={false}
-          />
-          
-          {/* Tooltip with restored vertical cursor */}
-          <Tooltip 
-              cursor={{ stroke: '#475569', strokeWidth: 1.5, strokeDasharray: '4 4' }}
-              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', background: 'rgba(255, 255, 255, 0.95)' }}
-              itemStyle={{ color: color, fontWeight: 'bold' }}
-              labelStyle={{ color: '#64748b', fontSize: '12px' }}
-              formatter={(value: number, name: string) => {
-                  if (name === subject) return [`${value} 分`, '赋分后'];
-                  return []; // Hide dummy line
-              }}
-              labelFormatter={(label) => `原始分: ${label}`}
+              label={{ value: xAxisConfig.label, position: 'insideBottom', offset: -10, fontSize: 10, fill: '#94a3b8' }}
           />
 
+          <YAxis 
+              domain={[30, 100]} 
+              ticks={[30, 40.5, 58.5, 70.5, 82.5, 100]} 
+              tick={{fontSize: 10, fill: '#64748b', fontWeight: 600}}
+              width={30}
+              axisLine={{ stroke: '#cbd5e1' }}
+              tickLine={false}
+              label={{ value: '等级赋分', position: 'insideTopLeft', offset: 10, fontSize: 10, fill: '#94a3b8' }}
+          />
+          
+          <Tooltip 
+              cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '4 4' }}
+              content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      const score = data[subject];
+                      const rank = data[`${subject}_rank`];
+                      
+                      const title = mode === 'score' 
+                        ? `原始分: ${label}` 
+                        : `位次: 前 ${Number(label).toFixed(1)}%`;
+
+                      return (
+                          <div 
+                            className="backdrop-blur-md rounded-xl shadow-lg border border-white/50 p-3 min-w-[120px]"
+                            style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
+                          >
+                             <div className="text-xs text-slate-500 mb-2 font-medium border-b border-slate-200/50 pb-1">
+                                {title}
+                             </div>
+                             <div className="space-y-1">
+                                 <div className="flex items-center justify-between gap-3 text-sm font-bold" style={{ color }}>
+                                     <span>赋分:</span>
+                                     <span className="text-lg leading-none">{score}</span>
+                                 </div>
+                                 <div className="flex items-center justify-between gap-3 text-xs text-slate-400">
+                                     <span>排位:</span>
+                                     <span>前 {rank.toFixed(1)}%</span>
+                                 </div>
+                             </div>
+                          </div>
+                      );
+                  }
+                  return null;
+              }}
+          />
+
+          {/* Main Curve */}
           <Area 
-              yAxisId="left"
               type="monotone" 
               dataKey={subject} 
               stroke={color} 
               strokeWidth={3}
-              fillOpacity={1} 
               fill={`url(#gradient-${subject})`} 
               isAnimationActive={false}
-              activeDot={{ r: 0 }} 
+              activeDot={{ r: 4, strokeWidth: 0 }} 
           />
 
-          {/* Dummy Line to force Right Axis rendering */}
-          <Line 
-            yAxisId="right"
-            dataKey={subject} 
-            stroke="none" 
-            dot={false} 
-            activeDot={false} 
-            isAnimationActive={false}
-            legendType="none"
-          />
-
-          {/* Stronger Grade Zone Dividers */}
+          {/* Zone Lines */}
           {GRADE_ZONES.map((zone) => (
               <ReferenceLine 
-                yAxisId="left"
                 key={`line-${zone.label}`} 
                 y={zone.min} 
                 stroke={zone.textColor} 
-                strokeDasharray="0" 
-                strokeWidth={1.5}
-                strokeOpacity={0.5}
-                label={{ 
-                    position: 'insideRight', 
-                    value: zone.label, 
-                    fill: zone.textColor, 
-                    fontSize: 18, 
-                    fontWeight: 900,
-                    opacity: 0.8,
-                    dx: -10 
-                }} 
+                strokeDasharray="2 2" 
+                strokeWidth={1}
+                strokeOpacity={0.4}
               />
           ))}
 
-          {/* User Input Marker (Point Only) */}
+          {/* User Position Dot */}
           {hasInputScore && (
               <>
                <ReferenceDot 
-                  yAxisId="left"
-                  x={rawScoreVal} 
-                  y={inputScaledVal} 
+                  x={dotX} 
+                  y={inputScore} 
                   r={6} 
                   fill="#fff" 
                   stroke={color} 
                   strokeWidth={3} 
                />
                <ReferenceArea 
-                  yAxisId="left"
-                  x1={rawScoreVal > 50 ? rawScoreVal - 15 : rawScoreVal} 
-                  x2={rawScoreVal > 50 ? rawScoreVal : rawScoreVal + 15}
-                  y1={inputScaledVal > 60 ? inputScaledVal - 10 : inputScaledVal} 
-                  y2={inputScaledVal > 60 ? inputScaledVal : inputScaledVal + 10}
-                  fill="transparent"
-                  stroke="none"
+                  x1={dotX} x2={dotX}
+                  y1={inputScore} y2={inputScore}
                >
                  <text 
-                    x={rawScoreVal > 50 ? rawScoreVal - 6 : rawScoreVal + 6} 
-                    y={inputScaledVal > 60 ? inputScaledVal - 6 : inputScaledVal + 12} 
+                    x={dotX} 
+                    y={inputScore} 
+                    dy={-15}
                     fill={color} 
-                    textAnchor={rawScoreVal > 50 ? "end" : "start"} 
+                    textAnchor="middle" 
                     fontSize={12} 
                     fontWeight="bold"
-                    style={{ textShadow: '0px 0px 4px white' }}
+                    style={{ textShadow: '0px 2px 4px rgba(255,255,255,0.8)' }}
                  >
-                    你在这里 ({inputScaledVal})
+                    {inputScore}
                  </text>
                </ReferenceArea>
               </>
           )}
 
-          {/* Custom Horizontal Crosshair Line + Dot */}
-          {hoverData && (
-            <>
-                {/* Horizontal line (Vertical handled by Tooltip) */}
-                <ReferenceLine 
-                    yAxisId="left"
-                    y={hoverData.scaled} 
-                    stroke="#475569" 
-                    strokeDasharray="4 4" 
-                    strokeWidth={1.5}
-                    ifOverflow="extendDomain"
-                    label={{ 
-                        position: 'left', 
-                        value: hoverData.scaled.toString(), 
-                        fill: '#475569', 
-                        fontSize: 10, 
-                        fontWeight: 'bold',
-                        dy: -5
-                    }}
-                />
-                <ReferenceDot 
-                    yAxisId="left"
-                    x={hoverData.raw} 
-                    y={hoverData.scaled} 
-                    r={5} 
-                    fill={color} 
-                    stroke="#475569" 
-                    strokeWidth={2} 
-                    ifOverflow="extendDomain"
-                />
-            </>
-          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -310,9 +287,9 @@ const SingleSubjectChart = ({
 };
 
 const SubjectScaler: React.FC = () => {
-  // Dataset Selection State
   const datasetKeys = Object.keys(SCALING_DATASETS);
   const [selectedDatasetKey, setSelectedDatasetKey] = useState<string>(datasetKeys[0]);
+  const [yAxisMode, setYAxisMode] = useState<'score' | 'rank'>('score');
 
   const [selectedSubjects, setSelectedSubjects] = useState<Record<ScalingSubject, boolean>>({
     "化学": false,
@@ -341,13 +318,14 @@ const SubjectScaler: React.FC = () => {
   const activeSubjects = (Object.keys(SUBJECT_COLORS) as ScalingSubject[]).filter(s => selectedSubjects[s]);
   const currentDataset = SCALING_DATASETS[selectedDatasetKey];
 
-  // Global Chart Data Generation based on selected dataset
   const chartData = useMemo(() => {
     const data = [];
     for (let i = 0; i <= 100; i++) {
       const point: any = { raw: i };
       activeSubjects.forEach(sub => {
-        point[sub] = calculateScaledScore(sub, i.toString(), currentDataset);
+        const score = calculateScaledScore(sub, i.toString(), currentDataset);
+        point[sub] = score;
+        point[`${sub}_rank`] = scoreToPercentile(score);
       });
       data.push(point);
     }
@@ -355,26 +333,26 @@ const SubjectScaler: React.FC = () => {
   }, [activeSubjects, currentDataset]);
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-4 sm:gap-6">
       
-      {/* Top Controls Grid: Dataset & Subjects combined on one row for desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      {/* Top Controls Grid - Optimized for Mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
         
         {/* Dataset Selector */}
-        <div className="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between gap-3">
-             <div className="flex items-center gap-3 overflow-hidden">
-               <span className="bg-blue-100 text-blue-600 p-2 rounded-lg shrink-0">
-                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+        <div className="md:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex items-center justify-between gap-2">
+             <div className="flex items-center gap-2 overflow-hidden">
+               <span className="bg-blue-50 text-blue-600 p-1.5 rounded-lg shrink-0">
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
                </span>
-               <div className="min-w-0">
-                 <h2 className="font-bold text-slate-700 text-sm truncate">赋分数据库</h2>
-                 <p className="text-xs text-slate-400 truncate">当前: {selectedDatasetKey.split(' ')[0]}</p>
+               <div className="min-w-0 flex-1">
+                 <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Database</div>
+                 <div className="font-bold text-slate-700 text-xs truncate">{selectedDatasetKey.split(' ')[0]}</div>
                </div>
             </div>
             <select 
                 value={selectedDatasetKey}
                 onChange={(e) => setSelectedDatasetKey(e.target.value)}
-                className="w-32 sm:w-48 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none transition-all"
+                className="w-24 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 outline-none"
             >
                 {datasetKeys.map(key => (
                     <option key={key} value={key}>{key}</option>
@@ -382,18 +360,41 @@ const SubjectScaler: React.FC = () => {
             </select>
         </div>
 
+        {/* View Mode Toggle */}
+        <div className="md:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 p-1 flex items-center gap-1">
+            <button
+                onClick={() => setYAxisMode('score')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                    yAxisMode === 'score'
+                    ? 'bg-blue-50 text-blue-600 shadow-sm'
+                    : 'text-slate-400 hover:bg-slate-50'
+                }`}
+            >
+                <span>分数模式</span>
+            </button>
+            <button
+                onClick={() => setYAxisMode('rank')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                    yAxisMode === 'rank'
+                    ? 'bg-blue-50 text-blue-600 shadow-sm'
+                    : 'text-slate-400 hover:bg-slate-50'
+                }`}
+            >
+                <span>排位模式</span>
+            </button>
+        </div>
+
         {/* Subject Selection */}
-        <div className="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center gap-4">
-            <h2 className="hidden sm:flex font-bold text-slate-700 text-sm items-center gap-2 shrink-0">
-                <span className="w-1.5 h-4 rounded-full bg-slate-400"></span>
-                科目
-            </h2>
-            <div className="flex flex-1 justify-between sm:justify-start gap-2 sm:gap-3">
+        <div className="md:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex items-center gap-3 overflow-x-auto no-scrollbar">
+            <div className="hidden md:flex items-center gap-1 text-slate-400 text-xs font-bold uppercase shrink-0">
+               <span>Subjects</span>
+            </div>
+            <div className="flex flex-1 justify-between md:justify-end gap-2 w-full">
                 {(Object.keys(SUBJECT_COLORS) as ScalingSubject[]).map(sub => (
                     <button
                         key={sub}
                         onClick={() => handleSubjectToggle(sub)}
-                        className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all border ${
+                        className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                             selectedSubjects[sub] 
                             ? `bg-slate-800 text-white border-slate-800 shadow-md transform scale-105` 
                             : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
@@ -409,7 +410,7 @@ const SubjectScaler: React.FC = () => {
 
       {/* Inputs & Results Grid */}
       {activeSubjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {activeSubjects.map(sub => {
                 const raw = scores[sub];
                 const scaled = raw ? calculateScaledScore(sub, raw, currentDataset) : '-';
@@ -417,39 +418,49 @@ const SubjectScaler: React.FC = () => {
 
                 return (
                     <div key={sub} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{ background: color }}></span>
+                        <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                            <h3 className="font-bold text-base sm:text-lg text-slate-700 flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: color }}></span>
                                 {sub}
                             </h3>
+                            <div className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-400 font-mono">
+                                {currentDataset === SCALING_DATASETS[datasetKeys[0]] ? '2026.12' : 'Unknown'}
+                            </div>
                         </div>
                         
-                        <div className="p-4 flex items-center gap-4 border-b border-slate-100 border-dashed">
+                        <div className="p-4 flex items-center gap-4 border-b border-slate-100 border-dashed relative z-10">
                              <div className="flex-1">
-                                <label className="text-xs text-slate-400 font-bold uppercase mb-1 block">原始分</label>
-                                <input 
-                                    type="number" 
-                                    value={raw}
-                                    placeholder="0-100"
-                                    onChange={(e) => handleScoreChange(sub, e.target.value)}
-                                    className="w-full text-2xl font-mono font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all"
-                                />
+                                <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">原始分</label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        value={raw}
+                                        placeholder="0"
+                                        onChange={(e) => handleScoreChange(sub, e.target.value)}
+                                        className="w-full text-2xl font-mono font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all placeholder:text-slate-200"
+                                    />
+                                    <span className="absolute right-3 top-2 text-xs text-slate-300 pointer-events-none">/100</span>
+                                </div>
                              </div>
-                             <div className="text-slate-300">➔</div>
+                             <div className="text-slate-200">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                             </div>
                              <div className="flex-1 text-right">
-                                <div className="text-xs text-slate-400 font-bold uppercase mb-1">赋分后</div>
-                                <div className="text-4xl font-black tracking-tight" style={{ color: color }}>
+                                <div className="text-[10px] text-slate-400 font-bold uppercase mb-1">等级赋分</div>
+                                <div className="text-4xl font-black tracking-tight flex items-baseline justify-end gap-1" style={{ color: color }}>
                                     {scaled}
+                                    <span className="text-sm font-bold text-slate-300 opacity-50">分</span>
                                 </div>
                              </div>
                         </div>
 
                         {/* Chart Area */}
-                        <div className="flex-1 p-2 bg-slate-50/30">
+                        <div className="flex-1 p-2 bg-gradient-to-b from-slate-50/50 to-white">
                             <SingleSubjectChart 
                               subject={sub} 
                               inputRawScore={raw}
                               chartData={chartData}
+                              mode={yAxisMode}
                             />
                         </div>
                     </div>
@@ -457,8 +468,12 @@ const SubjectScaler: React.FC = () => {
             })}
           </div>
       ) : (
-          <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-             <p>请先在上方勾选您的选考科目</p>
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+             <div className="bg-white p-3 rounded-full shadow-sm mb-3">
+                <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+             </div>
+             <p className="font-bold text-sm">请先在上方勾选科目</p>
+             <p className="text-xs opacity-70 mt-1">Select subjects to begin</p>
           </div>
       )}
     </div>
