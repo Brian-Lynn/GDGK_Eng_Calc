@@ -13,14 +13,13 @@ function App() {
   const [currentView, setCurrentView] = useState<PageView>('home');
   const [imgError, setImgError] = useState(false);
 
-  // Dynamic Favicon & Apple Touch Icon Handling
+  // Dynamic Favicon Handling
   useEffect(() => {
-    const updateIcons = () => {
+    const updateFavicon = () => {
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       // If image failed to load in UI, fall back to LightIcon or keep existing logic
       const iconUrl = isDark ? DarkIcon : LightIcon;
       
-      // 1. Standard Favicon (Desktop / Android)
       let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
       if (!link) {
         link = document.createElement('link');
@@ -28,34 +27,24 @@ function App() {
         link.rel = 'icon';
         document.head.appendChild(link);
       }
+      // Only update if changed to avoid flickering
       if (link.href !== window.location.origin + iconUrl && link.href !== iconUrl) {
           link.href = iconUrl;
-      }
-
-      // 2. Apple Touch Icon (iOS Home Screen & Tabs)
-      let appleLink: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
-      if (!appleLink) {
-        appleLink = document.createElement('link');
-        appleLink.rel = 'apple-touch-icon';
-        document.head.appendChild(appleLink);
-      }
-      if (appleLink.href !== window.location.origin + iconUrl && appleLink.href !== iconUrl) {
-        appleLink.href = iconUrl;
       }
     };
 
     // Initial set
-    updateIcons();
+    updateFavicon();
 
     // Listen for changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', updateIcons);
+      mediaQuery.addEventListener('change', updateFavicon);
     }
 
     return () => {
       if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', updateIcons);
+        mediaQuery.removeEventListener('change', updateFavicon);
       }
     };
   }, []);
