@@ -28,77 +28,82 @@ function App() {
 
   // --- Landing Page Component ---
   const LandingPage = () => (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-        {/* Decorative Background Elements */}
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-100/50 to-slate-50 z-0"></div>
-        <div className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-blue-200/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-[20%] left-[-20px] w-32 h-32 bg-purple-200/20 rounded-full blur-2xl"></div>
+    <div className="h-full w-full bg-slate-50 flex flex-col relative overflow-hidden">
+        {/* Decorative Background Elements - Fixed Layer */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+            <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-100/50 to-slate-50"></div>
+            <div className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-blue-200/20 rounded-full blur-3xl"></div>
+            <div className="absolute top-[20%] left-[-20px] w-32 h-32 bg-purple-200/20 rounded-full blur-2xl"></div>
+        </div>
 
-        <div className="container mx-auto px-6 py-12 z-10 flex-1 flex flex-col max-w-lg lg:max-w-4xl">
-            {/* Header / Profile */}
-            <div className="mb-12 text-center lg:text-left">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4">
-                     <span className="font-serif font-bold text-3xl italic text-slate-800">0x</span>
+        {/* Scrollable Content Layer */}
+        <div className="flex-1 w-full overflow-y-auto overflow-x-hidden z-10 relative">
+            <div className="container mx-auto px-6 py-12 flex flex-col min-h-full max-w-lg lg:max-w-4xl">
+                {/* Header / Profile */}
+                <div className="mb-12 text-center lg:text-left">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4">
+                        <span className="font-serif font-bold text-3xl italic text-slate-800">0x</span>
+                    </div>
+                    <h1 className="text-3xl lg:text-4xl font-black text-slate-800 tracking-tight mb-2">0xbean's Toolbox</h1>
+                    <p className="text-slate-500 text-sm lg:text-base">
+                        Personal utility collection for GD Gaokao & more.
+                    </p>
                 </div>
-                <h1 className="text-3xl lg:text-4xl font-black text-slate-800 tracking-tight mb-2">0xbean's Toolbox</h1>
-                <p className="text-slate-500 text-sm lg:text-base">
-                    Personal utility collection for GD Gaokao & more.
-                </p>
-            </div>
 
-            {/* Tools Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 flex-1 lg:flex-none">
-                {/* Tool 1 */}
-                <button 
-                    onClick={() => setCurrentView('english')}
-                    className="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all text-left flex flex-col relative overflow-hidden"
-                >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div className="relative z-10">
-                        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            <span className="text-lg">🇬🇧</span>
+                {/* Tools Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 flex-1 lg:flex-none mb-8">
+                    {/* Tool 1 */}
+                    <button 
+                        onClick={() => setCurrentView('english')}
+                        className="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all text-left flex flex-col relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                        <div className="relative z-10">
+                            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <span className="text-lg">🇬🇧</span>
+                            </div>
+                            <h2 className="text-lg font-bold text-slate-800 mb-1">英语听说/赋分计算器</h2>
+                            <p className="text-sm text-slate-400 leading-relaxed mb-4">
+                                支持广东高考英语合成计算，包含听说成绩折算、排位预估与等级评定。
+                            </p>
+                            <div className="flex items-center text-xs font-bold text-blue-500 mt-auto">
+                                <span>Open Tool</span>
+                                <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                            </div>
                         </div>
-                        <h2 className="text-lg font-bold text-slate-800 mb-1">英语听说/赋分计算器</h2>
-                        <p className="text-sm text-slate-400 leading-relaxed mb-4">
-                            支持广东高考英语合成计算，包含听说成绩折算、排位预估与等级评定。
-                        </p>
-                        <div className="flex items-center text-xs font-bold text-blue-500 mt-auto">
-                            <span>Open Tool</span>
-                            <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    {/* Tool 2 */}
+                    <button 
+                        onClick={() => setCurrentView('scaler')}
+                        className="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all text-left flex flex-col relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                        <div className="relative z-10">
+                            <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <span className="text-lg">📊</span>
+                            </div>
+                            <h2 className="text-lg font-bold text-slate-800 mb-1">选科赋分计算器</h2>
+                            <p className="text-sm text-slate-400 leading-relaxed mb-4">
+                                基于历史数据的选科赋分换算，支持分数/排位双向查询与可视化图表。
+                            </p>
+                            <div className="flex items-center text-xs font-bold text-indigo-500 mt-auto">
+                                <span>Open Tool</span>
+                                <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                            </div>
                         </div>
+                    </button>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-auto py-6 text-center text-xs text-slate-400 font-mono">
+                    <div className="flex items-center justify-center gap-2">
+                        <span>Designed & Developed by</span>
+                        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-600 font-bold hover:text-black transition-colors">
+                            <span>0xbean</span>
+                            <GithubIcon className="w-3.5 h-3.5" />
+                        </a>
                     </div>
-                </button>
-
-                {/* Tool 2 */}
-                <button 
-                    onClick={() => setCurrentView('scaler')}
-                    className="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all text-left flex flex-col relative overflow-hidden"
-                >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                     <div className="relative z-10">
-                        <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                            <span className="text-lg">📊</span>
-                        </div>
-                        <h2 className="text-lg font-bold text-slate-800 mb-1">选科赋分计算器</h2>
-                        <p className="text-sm text-slate-400 leading-relaxed mb-4">
-                            基于历史数据的选科赋分换算，支持分数/排位双向查询与可视化图表。
-                        </p>
-                        <div className="flex items-center text-xs font-bold text-indigo-500 mt-auto">
-                            <span>Open Tool</span>
-                            <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                    </div>
-                </button>
-            </div>
-
-            {/* Footer */}
-            <div className="mt-12 text-center text-xs text-slate-400 font-mono">
-                <div className="flex items-center justify-center gap-2">
-                    <span>Designed & Developed by</span>
-                    <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-600 font-bold hover:text-black transition-colors">
-                        <span>0xbean</span>
-                        <GithubIcon className="w-3.5 h-3.5" />
-                    </a>
                 </div>
             </div>
         </div>
@@ -114,7 +119,7 @@ function App() {
 
   // Otherwise, render the Tool Interface
   return (
-    <div className="h-full flex flex-col w-full bg-[#f8fafc]">
+    <div className="h-full flex flex-col w-full bg-[#f8fafc] overflow-hidden">
       {/* Header - Fixed */}
       <div className="bg-white/90 backdrop-blur-md border-b border-slate-200 z-50 flex-none">
         <div className="container mx-auto px-4 h-auto py-2 sm:h-16 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
@@ -175,7 +180,7 @@ function App() {
 
       {/* Content Wrapper */}
       <div className="flex-1 flex flex-col p-0 lg:p-6 lg:container lg:mx-auto lg:overflow-visible overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto no-scrollbar lg:overflow-visible">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar lg:overflow-visible">
             {currentView === 'english' ? <EnglishCalc /> : <div className="p-3 lg:p-0"><SubjectScaler /></div>}
             
             {/* Footer Signature for Mobile (inside scroll view) */}
