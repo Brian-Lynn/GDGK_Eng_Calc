@@ -1,11 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EnglishCalc from './components/EnglishCalc';
 import SubjectScaler from './components/SubjectScaler';
+// Import images so the bundler handles the hashing automatically
+// @ts-ignore
+import LightIcon from './assets/light_pixel_1f1f1f_180px.png';
+// @ts-ignore
+import DarkIcon from './assets/dark_pixel_1f1f1f_180px.png';
 
 type PageView = 'home' | 'english' | 'scaler';
 
 function App() {
   const [currentView, setCurrentView] = useState<PageView>('home');
+
+  // Dynamic Favicon Handling
+  useEffect(() => {
+    const updateFavicon = () => {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const iconUrl = isDark ? DarkIcon : LightIcon;
+      
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.type = 'image/png';
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = iconUrl;
+    };
+
+    // Initial set
+    updateFavicon();
+
+    // Listen for changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', updateFavicon);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', updateFavicon);
+      }
+    };
+  }, []);
 
   // Icons
   const GithubIcon = ({ className }: { className?: string }) => (
@@ -41,9 +78,12 @@ function App() {
             <div className="container mx-auto px-6 py-12 flex flex-col min-h-full max-w-lg lg:max-w-4xl">
                 {/* Header / Profile */}
                 <div className="mb-12 text-center lg:text-left">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4">
-                        <span className="font-serif font-bold text-3xl italic text-slate-800">0x</span>
-                    </div>
+                    {/* Updated Logo using Image */}
+                    <img 
+                      src={LightIcon} 
+                      alt="0xbean Logo" 
+                      className="inline-block w-20 h-20 rounded-2xl shadow-sm border border-slate-100 mb-4 bg-white p-0.5"
+                    />
                     <h1 className="text-3xl lg:text-4xl font-black text-slate-800 tracking-tight mb-2">0xbean's Toolbox</h1>
                     <p className="text-slate-500 text-sm lg:text-base">
                         Personal utility collection for GD Gaokao & more.
@@ -137,9 +177,8 @@ function App() {
              <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
             <div className="flex items-center gap-2">
-                <div className="bg-blue-500 text-white p-1 rounded-lg flex items-center justify-center w-8 h-8 shrink-0 shadow-sm">
-                   <span className="font-serif font-semibold italic text-lg leading-none" style={{ fontFamily: "'Times New Roman', serif" }}>ƒ</span>
-                </div>
+                {/* Updated Header Logo */}
+                <img src={LightIcon} className="w-8 h-8 rounded-lg shadow-sm bg-white border border-slate-100" alt="Logo" />
                 <h1 className="font-bold text-base sm:text-lg tracking-tight text-slate-700">GD Calc Suite</h1>
             </div>
           </div>
