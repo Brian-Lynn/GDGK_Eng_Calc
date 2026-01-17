@@ -10,8 +10,16 @@
     <meta name="apple-mobile-web-app-title" content="GD Calc">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-    <!-- Use a transparent 1x1 pixel as placeholder to prevent 404s before React loads the actual favicon -->
-    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAANSURBVBhXY2BgYAAAAAQAAVzN/2kAAAAASUVORK5CYII=">
+    <!-- Favicon and Apple Touch Icon for iOS -->
+    <!-- Static icons in HTML head for iOS to detect before React loads -->
+    <!-- Standard favicon -->
+    <link rel="icon" type="image/png" sizes="180x180" href="/icon-180x180.png">
+    <link rel="icon" type="image/png" href="/icon-180x180.png">
+    <!-- Apple Touch Icon for iOS Safari and Chrome (required for "Add to Home Screen") -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <!-- Additional meta for better iOS support -->
+    <meta name="theme-color" content="#f8fafc">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
